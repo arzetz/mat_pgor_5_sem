@@ -1,6 +1,7 @@
 import pygame
 import math
 import time
+import random
 
 window_size = 600
 radius = 200 
@@ -28,6 +29,7 @@ class Racer:
         self.laps = 0
         self.prev_angle = 0
         self.name = name
+        self.last_speed_change_time = time.time()
 
     def update_position(self, time_elapsed):
         angle = (speed * time_elapsed) * self.speed_offset / 5
@@ -40,12 +42,17 @@ class Racer:
 
         self.prev_angle = current_angle
         return x, y
+    
+    def update_speed(self):
+        if time.time() - self.last_speed_change_time > 2:
+            self.speed_offset = math.pi - random.uniform(-0.05, 0.05)
+            self.last_speed_change_time = time.time()
 
 racers = [
-    Racer(red, math.pi - 0.1, "Ландо"),
-    Racer(some, math.pi / 2, "Льюис"),
-    Racer(some2, 2 * math.pi / 3, "Макс"),
-    Racer(some3, math.pi, "Эстебан"),
+    Racer(red, math.pi - random.uniform(-0.3, 0.3), "Ландо"),
+    Racer(some, math.pi - random.uniform(-0.3, 0.3), "Льюис"),
+    Racer(some2, math.pi - random.uniform(-0.3, 0.3), "Макс"),
+    Racer(some3, math.pi - random.uniform(-0.3, 0.3), "Эстебан"),
 ]
 start_time = time.time()
 
@@ -59,7 +66,7 @@ while running:
             running = False
     time_elapsed = time.time() - start_time
 
-    if not show_text and all(r.laps >= 3 for r in racers):
+    if not show_text and all(r.laps >= 5 for r in racers):
         show_text = True
         lap_data = [(r, r.laps) for r in racers]
         lap_data.sort(key=lambda x: x[1], reverse=True)
@@ -85,11 +92,14 @@ while running:
         pygame.draw.circle(screen, blue, circle_center, radius, 1)
 
         for racer in racers:
+            racer.update_speed()
             x, y = racer.update_position(time_elapsed)
             pygame.draw.circle(screen, racer.color, (x, y), 10)
+            current_position = [(racer, racer.laps) for racer in racers]
+            current_position.sort(key=lambda x: x[1], reverse=True)
         font = pygame.font.Font(None, 36)
-        for i, racer in enumerate(racers):
-            text = font.render(f'{racer.name}: {racer.laps} кругов', True, racer.color)
+        for i, (racer, laps) in enumerate(current_position):
+            text = font.render(f'{racer.name}: {laps} кругов', True, racer.color)
             screen.blit(text, (20, 20 + i * 40))
 
         pygame.display.flip()
